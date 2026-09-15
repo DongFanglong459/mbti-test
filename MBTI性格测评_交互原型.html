@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI 性格测评 — 交互原型 V2.0</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23e67e22'/%3E%3Cstop%20offset='1'%20stop-color='%23e74c3c'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='url(%23g)'/%3E%3Ctext%20x='32'%20y='44'%20font-family='Arial'%20font-size='34'%20font-weight='bold'%20text-anchor='middle'%20fill='%23fff'%3EP%3C/text%3E%3C/svg%3E">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --primary:#6c5ce7;--primary-deep:#5a4bd1;--primary-light:#f0edff;
+    --text:#2d3436;--text-light:#8a8fa3;
+    --card:#ffffff;--bg1:#f1efff;--bg2:#e6f2fe;
+    --radius:20px;--shadow:0 10px 40px rgba(108,92,231,.10);
+    --proto:#e8602c;
+  }
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    min-height:100vh;color:var(--text);padding-top:46px;
+    background:linear-gradient(155deg,var(--bg1) 0%,var(--bg2) 100%);
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .container{width:100%;max-width:660px;padding:24px 18px;margin:auto}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:44px 40px 40px}
+  .hidden{display:none!important}
+  .fade-in{animation:fadeIn .45s ease both}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ============ 原型工具栏（走查层，非产品功能） ============ */
+  #proto-bar{
+    position:fixed;top:0;left:0;right:0;z-index:900;
+    background:#1e1e2c;color:#fff;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:8px 14px;font-size:12px;flex-wrap:wrap;
+    box-shadow:0 2px 14px rgba(0,0,0,.18);
+  }
+  .pb-left{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .pb-badge{
+    background:var(--proto);color:#fff;font-weight:700;padding:2px 8px;
+    border-radius:4px;letter-spacing:1px;font-size:11px;
+  }
+  .pb-left .pb-sub{color:#9aa0b5;font-size:11px}
+  .pb-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .pb-btn{
+    background:#34344a;color:#cfd3e4;border:1px solid #44445c;border-radius:6px;
+    padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;
+    white-space:nowrap;
+  }
+  .pb-btn:hover{background:#44445e;color:#fff}
+  .pb-btn.on{background:var(--proto);border-color:var(--proto);color:#fff;font-weight:600}
+  .pb-sep{width:1px;height:16px;background:#44445c;margin:0 2px}
+  .pb-jump-label{color:#9aa0b5;font-size:11px}
+
+  /* ============ 标注模式（走查层） ============ */
+  body.annotating [data-prd]{outline:1.5px dashed rgba(232,96,44,.55);outline-offset:2px}
+  [data-prd]{position:relative}
+  .prd-badge{
+    position:absolute;top:-9px;right:-6px;z-index:50;
+    background:var(--proto);color:#fff;font-size:10px;font-weight:700;
+    padding:2px 6px;border-radius:4px;cursor:pointer;line-height:1.3;
+    box-shadow:0 2px 8px rgba(232,96,44,.4);
+    pointer-events:auto;font-family:inherit;letter-spacing:.5px;
+  }
+
+  /* ============ 浮层（走查层） ============ */
+  .modal-mask{
+    position:fixed;inset:0;z-index:1000;background:rgba(20,20,35,.45);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-card{
+    background:#fff;border-radius:16px;max-width:520px;width:100%;
+    max-height:82vh;overflow:auto;padding:26px 26px 22px;
+    box-shadow:0 18px 60px rgba(0,0,0,.28);
+  }
+  .modal-title{font-size:17px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .modal-title .mtag{background:var(--proto);color:#fff;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700}
+  .modal-sub{font-size:12px;color:var(--text-light);margin-bottom:14px}
+  .modal-close{
+    position:sticky;top:0;float:right;background:#f0f0f6;border:none;border-radius:6px;
+    width:28px;height:28px;font-size:14px;cursor:pointer;color:#666;font-family:inherit;
+  }
+  .note-rule{background:#faf8ff;border-left:3px solid var(--primary);border-radius:0 8px 8px 0;padding:12px 14px;font-size:13.5px;line-height:1.8}
+  .flow-box-row{display:flex;flex-direction:column;gap:6px;margin:10px 0 6px}
+  .flow-node{border:1.5px solid var(--primary);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--primary-deep);background:var(--primary-light);text-align:center}
+  .flow-arrow{text-align:center;color:var(--text-light);font-size:12px;line-height:1.4}
+  .flow-arrow b{color:var(--proto);font-weight:600}
+  .rule-list{margin:6px 0 0;padding-left:0;list-style:none}
+  .rule-list li{font-size:13px;line-height:1.75;padding-left:18px;position:relative;color:#4a5568}
+  .rule-list li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--primary)}
+  .rule-head{font-size:13.5px;font-weight:700;margin:14px 0 4px;color:var(--text)}
+  .rule-head span{color:var(--proto);font-size:11px;font-weight:600;margin-left:6px}
+  .proto-tip{
+    background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;
+    padding:10px 14px;font-size:12.5px;line-height:1.7;margin-bottom:18px;
+  }
+
+  /* ============ 产品界面（与 PRD 6.4 视觉规范一致） ============ */
+  .logo{
+    text-align:center;font-size:52px;font-weight:800;letter-spacing:6px;margin-bottom:10px;
+    background:linear-gradient(120deg,#6c5ce7,#4aa3f0);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .subtitle{text-align:center;color:var(--text-light);font-size:15px;line-height:1.7;margin-bottom:34px}
+  .meta-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:34px}
+  .meta-chip{padding:8px 18px;background:var(--primary-light);color:var(--primary-deep);border-radius:999px;font-size:14px;font-weight:500}
+  .btn-primary{
+    display:block;width:100%;padding:17px;border:none;border-radius:14px;cursor:pointer;
+    background:linear-gradient(120deg,#6c5ce7,#5a8df0);color:#fff;
+    font-size:17px;font-weight:600;letter-spacing:2px;
+    box-shadow:0 6px 18px rgba(108,92,231,.28);
+    transition:transform .2s,box-shadow .2s;font-family:inherit;
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(108,92,231,.34)}
+  .btn-primary:active{transform:translateY(0)}
+
+  .progress-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;color:var(--text-light);margin-bottom:10px}
+  .progress-head b{color:var(--primary-deep);font-weight:700}
+  .progress-bar{height:7px;background:#eef0f8;border-radius:99px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:99px;width:0;background:linear-gradient(90deg,#6c5ce7,#5a8df0);transition:width .35s ease}
+  .question-wrap{margin-top:34px}
+  .question-text{font-size:21px;font-weight:700;line-height:1.55;text-align:center;margin-bottom:30px}
+  .options{display:flex;flex-direction:column;gap:14px}
+  .option{
+    display:flex;align-items:center;gap:15px;width:100%;text-align:left;
+    padding:19px 22px;border-radius:14px;cursor:pointer;
+    background:#f8f8fd;border:2px solid transparent;
+    font-size:16px;line-height:1.6;color:var(--text);font-family:inherit;transition:all .18s;
+  }
+  .option:hover{border-color:var(--primary);background:var(--primary-light)}
+  .option:active{transform:scale(.985)}
+  .option.picked{border-color:var(--primary);background:var(--primary-light)}
+  .option-letter{
+    flex-shrink:0;width:30px;height:30px;border-radius:50%;
+    background:#e6e4f4;color:#5f5f77;font-size:14px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;transition:all .18s;
+  }
+  .option:hover .option-letter,.option.picked .option-letter{background:var(--primary);color:#fff}
+
+  .result-eyebrow{text-align:center;font-size:14px;color:var(--text-light);letter-spacing:3px;margin-bottom:10px}
+  .result-type{
+    text-align:center;font-size:62px;font-weight:800;letter-spacing:8px;margin-bottom:8px;
+    background:linear-gradient(120deg,#6c5ce7,#4aa3f0);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .result-name{text-align:center;font-size:21px;font-weight:600;margin-bottom:22px}
+  .result-tags{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:28px}
+  .tag{padding:7px 18px;border-radius:999px;font-size:14px;font-weight:500;background:var(--primary-light);color:var(--primary-deep)}
+  .result-divider{width:56px;height:3px;border-radius:2px;margin:0 auto 26px;background:linear-gradient(90deg,#6c5ce7,#5a8df0)}
+  .result-desc{font-size:15.5px;line-height:1.95;color:#4a5568;text-align:justify}
+  .result-actions{margin-top:34px}
+  .disclaimer{text-align:center;font-size:12.5px;color:#b0b4c4;line-height:1.7;margin-top:22px}
+
+  @media (max-width:480px){
+    body{padding-top:80px}
+    .container{padding:14px 12px}
+    .card{padding:34px 22px 30px;border-radius:16px}
+    .logo{font-size:40px;letter-spacing:4px}
+    .question-text{font-size:18.5px}
+    .option{font-size:15px;padding:16px 16px;gap:12px}
+    .result-type{font-size:46px;letter-spacing:5px}
+    #proto-bar{padding:6px 10px}
+    .pb-left .pb-sub{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== 原型工具栏（走查辅助层，对应 PRD 4/5 章） ===== -->
+<div id="proto-bar">
+  <div class="pb-left">
+    <span class="pb-badge">PROTOTYPE</span>
+    <span>MBTI 性格测评 · 交互原型 V2.0</span>
+    <span class="pb-sub">依据 PRD V2.0 · 2026-09</span>
+  </div>
+  <div class="pb-actions">
+    <button class="pb-btn" id="pb-notes" type="button">标注模式：关</button>
+    <button class="pb-btn" id="pb-flow" type="button">流程与规则说明</button>
+    <div class="pb-sep"></div>
+    <span class="pb-jump-label">直达走查：</span>
+    <button class="pb-btn" data-jump="welcome" type="button">欢迎页</button>
+    <button class="pb-btn" data-jump="quiz" type="button">答题页</button>
+    <button class="pb-btn" data-jump="result" type="button">结果页</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 欢迎页（PRD 5.1） -->
+  <div class="card fade-in" id="screen-welcome">
+    <div class="logo" data-prd="W-01">MBTI</div>
+    <div class="subtitle" data-prd="W-02">28 道情境题，帮你看清自己的性格类型<br>没有对错之分，跟随第一直觉作答即可</div>
+    <div class="meta-row" data-prd="W-03">
+      <span class="meta-chip">28 题</span>
+      <span class="meta-chip">约 5 分钟</span>
+      <span class="meta-chip">本地计算 · 不上传数据</span>
+    </div>
+    <button class="btn-primary" id="btn-start" type="button" data-prd="W-04">开始测评</button>
+    <div class="disclaimer" data-prd="W-05">结果仅供自我探索与娱乐参考，不构成任何心理诊断</div>
+  </div>
+
+  <!-- 答题页（PRD 5.2） -->
+  <div class="card hidden" id="screen-quiz">
+    <div class="progress-head" data-prd="Q-01">
+      <span>答题进度</span>
+      <span>第 <b id="q-current">1</b> / 28 题</span>
+    </div>
+    <div class="progress-bar" data-prd="Q-02"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="question-wrap fade-in" id="question-wrap">
+      <div class="question-text" id="question-text" data-prd="Q-03"></div>
+      <div class="options">
+        <button class="option" id="opt-a" type="button" data-prd="Q-04">
+          <span class="option-letter">A</span><span class="option-text" id="text-a"></span>
+        </button>
+        <button class="option" id="opt-b" type="button" data-prd="Q-04">
+          <span class="option-letter">B</span><span class="option-text" id="text-b"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 结果页（PRD 5.3） -->
+  <div class="card hidden" id="screen-result">
+    <div id="proto-direct-tip" class="proto-tip hidden"></div>
+    <div class="result-eyebrow" data-prd="R-01">你的性格类型是</div>
+    <div class="result-type" id="result-type" data-prd="R-02">XXXX</div>
+    <div class="result-name" id="result-name" data-prd="R-03"></div>
+    <div class="result-tags" id="result-tags" data-prd="R-04"></div>
+    <div class="result-divider" data-prd="R-05"></div>
+    <div class="result-desc" id="result-desc" data-prd="R-06"></div>
+    <div class="result-actions">
+      <button class="btn-primary" id="btn-retest" type="button" data-prd="R-07">重新测试</button>
+    </div>
+    <div class="disclaimer" data-prd="R-08">MBTI 是一种流行性格分类工具，结果仅供自我探索与娱乐参考<br>不同时间测评可能得到不同结果，请勿将其作为重大决策的唯一依据</div>
+  </div>
+
+</div>
+
+<!-- PRD 元素说明浮层（走查层） -->
+<div class="modal-mask hidden" id="prd-note-mask">
+  <div class="modal-card">
+    <button class="modal-close" id="prd-note-close" type="button">✕</button>
+    <div class="modal-title"><span class="mtag" id="note-id">W-01</span><span id="note-title">元素</span></div>
+    <div class="modal-sub" id="note-src">PRD 5.1 欢迎页 · 界面元素</div>
+    <div class="note-rule" id="note-rule"></div>
+  </div>
+</div>
+
+<!-- 流程与规则说明浮层（走查层） -->
+<div class="modal-mask hidden" id="flow-mask">
+  <div class="modal-card">
+    <button class="modal-close" id="flow-close" type="button">✕</button>
+    <div class="modal-title"><span class="mtag">PRD 4.1</span>页面流程</div>
+    <div class="flow-box-row">
+      <div class="flow-node">欢迎页（默认入口）</div>
+      <div class="flow-arrow">↓ 点击"开始测评"（W-04）</div>
+      <div class="flow-node">答题页 · 28 题逐题流式，单向前进</div>
+      <div class="flow-arrow">↓ 完成第 28 题自动进入</div>
+      <div class="flow-node">结果页</div>
+      <div class="flow-arrow"><b>↑ 点击"重新测试"（R-07）：计分清零，回到第 1 题</b></div>
+    </div>
+    <div class="rule-head">答题交互规则 <span>PRD 5.2</span></div>
+    <ul class="rule-list">
+      <li>选中选项后自动进入下一题，无需确认按钮</li>
+      <li>切题带淡入动画；过渡期锁定点击，防连点跳题</li>
+      <li>每题强制 A/B 二选一，无中立选项（迫选题）</li>
+      <li>刷新页面任意时刻回到欢迎页，答题状态仅存内存</li>
+    </ul>
+    <div class="rule-head">题库与计分规则 <span>PRD 5.2 / 5.3</span></div>
+    <ul class="rule-list">
+      <li>28 道中文情境题，四维度（E/I、S/N、T/F、J/P）各 7 题，循环交错排列</li>
+      <li>计分：按维度统计倾向，每组 7 题为奇数必分高低、无平局</li>
+      <li>四组取较高一侧拼接为 4 字母类型，映射 16 型文案（昵称 + 3 标签 + 约 200 字简介）</li>
+    </ul>
+    <div class="rule-head">原型走查说明 <span>本页为原型辅助层</span></div>
+    <ul class="rule-list">
+      <li>顶部工具栏与橙色标注均为走查辅助，不属于产品功能范围</li>
+      <li>"标注模式"开启后，橙色编号对应 PRD 界面元素编号（W/Q/R 系列），点击编号可查看该元素的 PRD 规则</li>
+      <li>"直达走查"可快速切换页面：结果页直达以全选 A（→ ESTJ）作为示例数据</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ==================== 题库（PRD 5.2：28 题 · 四维度各 7 题 · 循环交错） ==================== */
+var QUESTIONS = [
+  {dim:'EI', text:'参加聚会时，你通常……', a:'主动和很多人聊天，越聊越起劲', b:'更喜欢待在熟悉的小圈子里，热闹久了就想回家'},
+  {dim:'SN', text:'读完一本书或看完一部电影，你更容易记住……', a:'具体的情节、细节和数字', b:'整体的氛围、寓意和它带给你的联想'},
+  {dim:'TF', text:'朋友向你倾诉烦恼，你的第一反应是……', a:'帮他分析问题、一起想解决办法', b:'先安慰他，表达理解和陪伴'},
+  {dim:'JP', text:'出门旅行之前，你通常……', a:'提前做好攻略，行程、交通、住宿都定好', b:'大概定个方向，具体怎么玩到了再说'},
+  {dim:'EI', text:'忙碌一周之后，怎样的周末更能让你恢复能量？', a:'约上朋友出去玩，人多才热闹', b:'独处做自己喜欢的事，安静地充电'},
+  {dim:'SN', text:'你更信赖哪一种判断？', a:'看得见的事实和亲身验证过的经验', b:'说不清理由、但往往很准的直觉'},
+  {dim:'TF', text:'做重要决定时，你更看重……', a:'逻辑和利弊，道理上说得通最重要', b:'感受和关系，身边的人是否都能接受'},
+  {dim:'JP', text:'你的书桌或房间通常……', a:'井井有条，东西都有固定的位置', b:'比较随性，只有自己知道东西在哪'},
+  {dim:'EI', text:'遇到烦心事时，你更倾向于……', a:'找信任的人说出来，聊完就轻松了', b:'先自己消化，想通了再谈'},
+  {dim:'SN', text:'做计划时，你更关注……', a:'当下的资源、具体步骤和可行性', b:'未来的可能性和整体大方向'},
+  {dim:'TF', text:'看到别人争论时，你更容易注意到……', a:'谁的论据更扎实、逻辑更严密', b:'气氛是否紧张、有没有人受了委屈'},
+  {dim:'JP', text:'面对截止日期，你的节奏是……', a:'尽早开始、分段推进，提前完成才安心', b:'不急不慢，临近节点反而效率爆发'},
+  {dim:'EI', text:'在会议或小组讨论中发言，你通常……', a:'想到什么就说什么，边说边理思路', b:'先在心里打好草稿，想清楚再开口'},
+  {dim:'SN', text:'别人向你交代一件事，你更在意……', a:'细节是否交代清楚、有没有遗漏', b:'对方真正想达成的意图和重点'},
+  {dim:'TF', text:'听到比较直接的批评，你通常……', a:'对事不对人，先看批评得有没有道理', b:'心里会先咯噔一下，需要缓一缓'},
+  {dim:'JP', text:'原定计划被突然打乱，你会……', a:'有点烦躁，想尽快把节奏调整回来', b:'既来之则安之，随机应变就好'},
+  {dim:'EI', text:'和陌生人同乘一段长途，你会……', a:'很自然地和对方攀谈起来', b:'戴上耳机或看看风景，互不打扰就好'},
+  {dim:'SN', text:'你更欣赏哪种做事方式？', a:'脚踏实地，把眼前的事做扎实', b:'大胆设想，跳出常规找新路子'},
+  {dim:'TF', text:'你更欣赏这样的人……', a:'客观公正、就事论事，哪怕显得有点冷', b:'温暖体贴、善解人意，让人如沐春风'},
+  {dim:'JP', text:'你更喜欢哪种工作方式？', a:'按计划有条不紊地推进，节点清晰', b:'保留弹性，边做边调整状态'},
+  {dim:'EI', text:'哪种状态更像你？', a:'朋友多、圈子热闹，随时能约到人', b:'朋友不多但深交，更喜欢一对一相处'},
+  {dim:'SN', text:'面对一件新事物，你的第一反应是……', a:'先了解它是什么、有什么用', b:'先想它还能衍生出什么新的可能'},
+  {dim:'TF', text:'给同事提意见时，你觉得……', a:'直接点破问题才是真正的负责', b:'照顾对方的感受比措辞犀利更重要'},
+  {dim:'JP', text:'待办清单对你来说是……', a:'刚需，完成一项划掉一项很解压', b:'写过就忘，全靠状态和心情自由发挥'},
+  {dim:'EI', text:'学一门新技能，你更愿意……', a:'组队学或报个班，互相交流进步快', b:'自己找资料研究，按自己的节奏来'},
+  {dim:'SN', text:'你觉得自己更像是……', a:'现实的观察者，眼见为实', b:'未来的畅想家，脑洞常开'},
+  {dim:'TF', text:'同事的工作出了纰漏，你会更倾向于……', a:'直接指出错在哪里，避免再犯', b:'先肯定他的付出，再委婉提醒'},
+  {dim:'JP', text:'你更认同哪种生活态度？', a:'凡事有规划、有交代，心里才踏实', b:'保持开放和弹性，惊喜来自即兴'}
+];
+
+/* ==================== 16 型结果文案（PRD 5.3：代码 + 昵称 + 3 标签 + 约 200 字简介） ==================== */
+var TYPE_DATA = {
+  INTJ:{name:'策略家',tags:['远见卓识','独立理性','深谋远虑'],desc:'你是天生的谋略者，习惯透过表象洞察事物的本质与规律。安静、独立、对自己要求极高，脑子里常常同时运转着好几个长期计划。你相信逻辑与远见胜过随波逐流，不喜欢无意义的寒暄，更愿意把时间花在真正重要的事情上。在工作中，你善于制定长期战略，一眼看出系统里低效的环节；在生活中，你享受深度思考带来的纯粹乐趣。你也可能显得疏离或固执，但那只是因为你对"把事情做对"有一套自己的标准。对你而言，独立思考不是选择，而是本能。'},
+  INTP:{name:'逻辑学家',tags:['求知若渴','逻辑缜密','思想自由'],desc:'你的大脑像一台永不停歇的思考机器，对世界充满知识性的好奇。你擅长拆解概念、发现逻辑漏洞，常常能想到别人想不到的角度。比起热闹的社交，你更享受一个人钻研感兴趣的领域，从抽象思辨中获得纯粹的快乐。你不喜欢被规则和形式束缚，对"从来都是这么做的"这种理由天然免疫。在别人眼里你可能有些心不在焉，但那只是因为你的注意力，正停留在某个更迷人的思想世界里。对你而言，理解世界的方式，就是不断追问"为什么"。'},
+  ENTJ:{name:'指挥官',tags:['果敢决断','天生领导','目标导向'],desc:'你天生自带领导气场，看到低效就想优化，看到目标就想达成。你思路清晰、意志坚定，善于把宏大愿景拆解成可执行的路线图，并推动团队向前冲刺。你不畏惧冲突和挑战，反而把它视为把问题摆上桌面的机会。你讨厌拖泥带水和含糊其辞，做事讲究效率和结果。有时你可能显得强势、缺乏耐心，但那是因为你太清楚要去哪里、也深信能把事情做成。对你而言，人生就是一场值得全力以赴的征服。'},
+  ENTP:{name:'辩论家',tags:['机智敏捷','创意无限','敢于质疑'],desc:'你是人群中的点子发动机，脑洞大、反应快，享受思想碰撞的火花。你喜欢质疑"理所当然"，用犀利又幽默的方式挑战既有观念——辩论对你来说不是吵架，而是脑力健身。你对新鲜事物毫无抵抗力，常常同时开启好几个新计划；按部就班会让你窒息，而"从零到一"让你兴奋。你可能显得爱抬杠、三分钟热度，但正是这种不安分的思维，让你总能看见别人忽略的可能性。对你而言，世界最大的乐趣，就是永远有新问题可琢磨。'},
+  INFJ:{name:'提倡者',tags:['洞察人心','理想主义','温柔坚定'],desc:'你安静的外表下，藏着一颗洞察人性的心，常常能感受到别人没有说出口的情绪。你有着深刻的理想主义，希望自己的存在能让世界变好一点点，哪怕只有一点。你对意义感有执念，不愿把生命消耗在肤浅的事情上。你擅长一对一的深入交流，是朋友眼中"真正懂我"的那个人。你也容易因为太在意他人而忽略自己，或因完美主义而疲惫，但正因如此，你身上那种温柔而坚定的力量才格外珍贵。'},
+  INFP:{name:'调停者',tags:['温柔真挚','想象丰富','坚守价值'],desc:'你外表温和，内心却有一个丰富到超乎想象的宇宙。你极度看重真诚与价值观，宁可格格不入，也不愿违背内心。你对文字、艺术和一切美的事物有天生的敏感，常常在独处和想象中汲取能量。你渴望世界更善意、更真实，也愿意为此悄悄努力。在现实层面，你可能显得有些拖延或回避冲突，但那只是因为"不像自己"比"不够成功"更让你难受。对你而言，忠于内心是一切选择的底线。'},
+  ENFJ:{name:'主人公',tags:['感召力强','热心利他','凝聚人心'],desc:'你自带温暖的光环，走到哪里都容易成为人群的核心。你天生擅长读懂他人、凝聚人心，能把自己的热情传递给周围的人。你相信每个人都值得被看见、被激发，因此常常不自觉地扮演引导者和组织者的角色。你做事有使命感，喜欢帮助别人成长，从"让团队变好"中获得深深的满足。你要提醒自己的只是：别把所有人的期待都扛在肩上。对你而言，点亮他人，就是点亮自己。'},
+  ENFP:{name:'竞选者',tags:['热情四射','灵感不断','自由率真'],desc:'你是行走的能量球，好奇心和热情几乎不分对象——新想法、新朋友、新可能，来者不拒。你擅长在平凡中发现闪光点，也能一瞬间点燃周围人的情绪。你重视自由和真实，讨厌被条条框框驯化。你的思维非常跳跃，常常话说一半就想到下一个点子，朋友们的共识是：和你在一起永远不会无聊，只是不一定跟得上你的节奏。你要对抗的只是新鲜感褪去后的三分钟热度。对你而言，人生就该活得热气腾腾。'},
+  ISTJ:{name:'检查员',tags:['严谨可靠','尽职尽责','脚踏实地'],desc:'你是值得托付的基石型人格，一诺千金，说到做到。你做事讲求事实、流程和标准，不喜欢模糊和侥幸，经手的事务总能安排得井井有条。你对责任有近乎信仰般的执着，是团队里"从不掉链子"的那个人。你不喜欢夸夸其谈，更愿意用结果说话；别人可能觉得你保守固执，但正是你这样的人，撑起了世界的秩序与可靠。对亲近的人，你的关心务实而克制，细水长流。对你而言，"靠谱"是最高的赞美。'},
+  ISFJ:{name:'守卫者',tags:['体贴入微','默默奉献','稳重长情'],desc:'你是温和而坚定的守护者，把照顾他人当成一种天然职责。你记性好、心思细，常常默默记得别人的喜好和需要，在不张扬的细节里释放善意。你做事踏实、有耐心，愿意长期坚持一件正确但不出风头的事。你不习惯表达自己的需求，习惯把"没关系"挂在嘴边。对亲近的人，你的付出不求回报，只求安稳长久。别人未必常常把你挂在嘴边，但时间越久，越没有人离得开你。'},
+  ESTJ:{name:'总经理',tags:['高效务实','秩序担当','直接坦率'],desc:'你是天生的组织者，做事目标明确、雷厉风行。你尊重规则和秩序，相信明确的计划比空谈愿景更有价值。你擅长把混乱理出头绪、把责任落实到人，是团队里最可靠的推进器。你说话直接，讨厌绕弯子和低效率，有时会显得强势，但你的出发点始终是"把事情做成"。对家人朋友，你操心且务实，习惯用行动而非甜言表达关心。对你而言，把每件事安排得明明白白，就是安心的来源。'},
+  ESFJ:{name:'执政官',tags:['热心周到','重视和谐','有求必应'],desc:'你是氛围的营造者，天生敏感于他人的情绪和需求。你热情好客、乐于付出，喜欢把大家聚在一起，让每个人都感到舒适自在。你重视人际关系的和谐与稳定，常常主动扮演协调者的角色，正面冲突会让你难受。你踏实尽责，答应的事情从不敷衍，也因此特别值得信赖。你要留意的，只是别因为太在意别人的评价而委屈自己。你带给周围人的温暖，实实在在、不可替代。'},
+  ISTP:{name:'鉴赏家',tags:['冷静机敏','动手高手','随性洒脱'],desc:'你是冷静的实干家，话不多，但动手能力一流。你天生擅长理解工具、机械和系统如何运作，遇到问题第一反应不是慌，而是"让我拆开看看"。你享受当下的自由，不喜欢被计划和外界的期待绑住，越是不受限的环境，越能发挥你的机敏。你外表低调，实则是危机中最淡定可靠的那个人。朋友眼里的你随性洒脱，但你心里自有一套分寸。对你而言，能用双手解决的问题，都不算问题。'},
+  ISFP:{name:'探险家',tags:['温和随性','审美敏锐','活在当下'],desc:'你是安静的感受者与创造者，对外界的美有天然的敏感——颜色、声音、氛围，都会在你心里留下印记。你温和随性，不喜欢冲突和束缚，渴望按自己的节奏生活。你未必张扬，但一定有自己独特的审美和坚持，常常通过艺术、手作或生活方式悄悄表达自我。比起宏大的长远规划，你更相信眼前真实的感受与体验。对你而言，把每一个当下过得有滋有味，就是对生活最好的回答。'},
+  ESTP:{name:'企业家',tags:['行动至上','随机应变','敢闯敢拼'],desc:'你是天生的行动派，眼疾手快，最擅长在真实世界的摸爬滚打中解决问题。规则对你更像建议，你相信行动比空想有用，边干边调整是你的本能。你抗压能力强，越是紧张刺激的局面，越能发挥你随机应变的机智。你对风险不太敏感，对机会却嗅觉敏锐，常常在别人还在犹豫时就已经出手。朋友眼里的你豪爽直接、精力充沛，从不会让场子冷下来。'},
+  ESFP:{name:'表演者',tags:['活泼开朗','享受当下','感染力强'],desc:'你走到哪里，哪里就是舞台。你活泼热情、感染力十足，天生擅长活跃气氛，是朋友圈里当之无愧的开心果。你重视感官与当下的快乐，美食、美景、热闹的聚会都能让你能量满格。你不喜欢复杂的心思和漫长的等待，更相信眼前真实可感的快乐。你慷慨大方，愿意把好东西和好心情分享给身边每一个人。对你而言，快乐要自己先拥有，才能给出去。'}
+};
+
+/* ==================== PRD 元素标注数据（走查层） ==================== */
+var PRD_NOTES = {
+  'W-01':{title:'产品 Logo',src:'PRD 5.1 欢迎页 · 界面元素',rule:'文字"MBTI"，紫蓝渐变大号加粗，居中展示。视觉规范：渐变色 #6C5CE7 → #4AA3F0。'},
+  'W-02':{title:'副标题',src:'PRD 5.1 欢迎页 · 界面元素',rule:'内容："28 道情境题，帮你看清自己的性格类型 / 没有对错之分，跟随第一直觉作答即可"，灰色小字居中，传达测评方式与作答心态。'},
+  'W-03':{title:'信息胶囊',src:'PRD 5.1 欢迎页 · 界面元素',rule:'三枚浅紫底圆角胶囊：28 题、约 5 分钟、本地计算 · 不上传数据。快速传达题量、时长与隐私承诺。'},
+  'W-04':{title:'开始按钮',src:'PRD 5.1 欢迎页 · 界面元素',rule:'"开始测评"，渐变主按钮，点击进入答题页第 1 题（题目与进度条同时重置）。'},
+  'W-05':{title:'免责声明',src:'PRD 5.1 欢迎页 · 界面元素',rule:'底部灰色小字："结果仅供自我探索与娱乐参考，不构成任何心理诊断"。对应 Non-goals X-03（不做科学效度承诺）。'},
+  'Q-01':{title:'进度信息',src:'PRD 5.2 答题页 · 界面元素',rule:'左侧固定文字"答题进度"，右侧"第 N / 28 题"，当前题号加粗高亮（主色深部 #5A4BD1）。'},
+  'Q-02':{title:'进度条',src:'PRD 5.2 答题页 · 界面元素',rule:'渐变填充条，宽度 =（已完成题数 / 28）× 100%，带 0.35s 过渡动画；每答 1 题更新一次。'},
+  'Q-03':{title:'题干',src:'PRD 5.2 答题页 · 界面元素',rule:'当前题题干文字，深色加粗，居中，每次切题随卡片淡入。'},
+  'Q-04':{title:'选项卡片',src:'PRD 5.2 答题页 · 界面元素',rule:'A/B 两项圆角卡片 + 圆形字母徽章；悬停高亮描边；点击后选中反馈 220ms 再自动切题；切题过渡期锁定点击防连点。每题强制二选一，无中立选项。'},
+  'R-01':{title:'引导文字',src:'PRD 5.3 结果页 · 界面元素',rule:'"你的性格类型是"，灰色小字，字间距加宽，为类型结论做视觉铺垫。'},
+  'R-02':{title:'类型字母',src:'PRD 5.3 结果页 · 界面元素',rule:'4 字母结果（如 INTP），紫蓝渐变特大号加粗，居中，字间距加宽，为结果页第一视觉焦点。'},
+  'R-03':{title:'类型名称',src:'PRD 5.3 结果页 · 界面元素',rule:'中文类型昵称（如"逻辑学家"），深色大字居中，取自 16 型数据表。'},
+  'R-04':{title:'特质标签',src:'PRD 5.3 结果页 · 界面元素',rule:'3 个特质词胶囊（浅紫底、主色文字、999px 圆角），横向居中排列。'},
+  'R-05':{title:'分割线',src:'PRD 5.3 结果页 · 界面元素',rule:'渐变短横线居中，分隔类型信息与性格简介。'},
+  'R-06':{title:'性格简介',src:'PRD 5.3 结果页 · 界面元素',rule:'约 200 字中文描述，两端对齐，1.95 倍行距；文案内置 16 种，按计分结果映射。'},
+  'R-07':{title:'重测按钮',src:'PRD 5.3 结果页 / 5.4 重新测试',rule:'"重新测试"，渐变主按钮。点击后：当前题号归零、四维度计分器清零、回到答题页第 1 题，进度条归零。'},
+  'R-08':{title:'免责声明',src:'PRD 5.3 结果页 · 界面元素',rule:'两行说明：MBTI 为流行性格分类工具，仅供自我探索与娱乐参考；不同时间测评可能得到不同结果，请勿作为重大决策的唯一依据。'}
+};
+
+/* ==================== 状态（仅存内存，刷新即清空） ==================== */
+var current = 0;
+var answers = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+var locked = false;
+
+var $ = function(id){ return document.getElementById(id); };
+var screens = {welcome: $('screen-welcome'), quiz: $('screen-quiz'), result: $('screen-result')};
+
+function showScreen(key){
+  Object.keys(screens).forEach(function(k){ screens[k].classList.toggle('hidden', k !== key); });
+  screens[key].classList.remove('fade-in');
+  void screens[key].offsetWidth;
+  screens[key].classList.add('fade-in');
+}
+
+/* ==================== 产品流程逻辑 ==================== */
+function startQuiz(){
+  current = 0;
+  answers = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+  locked = false;
+  $('proto-direct-tip').classList.add('hidden');
+  renderQuestion();
+  showScreen('quiz');
+}
+
+function renderQuestion(){
+  var q = QUESTIONS[current];
+  $('q-current').textContent = current + 1;
+  $('progress-fill').style.width = (current / QUESTIONS.length * 100) + '%';
+  $('question-text').textContent = q.text;
+  $('text-a').textContent = q.a;
+  $('text-b').textContent = q.b;
+  var wrap = $('question-wrap');
+  wrap.classList.remove('fade-in');
+  void wrap.offsetWidth;
+  wrap.classList.add('fade-in');
+  if(annotating) injectBadges();   /* textContent 赋值会清除 Q-03 徽章，切题后重注入 */
+}
+
+function pick(option){
+  if(locked) return;
+  locked = true;
+  var q = QUESTIONS[current];
+  var letter = (option === 'a') ? q.dim.charAt(0) : q.dim.charAt(1);
+  answers[letter]++;
+  $('opt-' + option).classList.add('picked');
+  setTimeout(function(){
+    $('opt-' + option).classList.remove('picked');
+    current++;
+    if(current >= QUESTIONS.length){
+      $('progress-fill').style.width = '100%';
+      showResult();
+    }else{
+      renderQuestion();
+      locked = false;
+    }
+  }, 220);
+}
+
+function calcType(){
+  var t = '';
+  t += answers.E >= answers.I ? 'E' : 'I';
+  t += answers.S >= answers.N ? 'S' : 'N';
+  t += answers.T >= answers.F ? 'T' : 'F';
+  t += answers.J >= answers.P ? 'J' : 'P';
+  return t;
+}
+
+function showResult(){
+  var type = calcType();
+  var data = TYPE_DATA[type];
+  $('result-type').textContent = type;
+  $('result-name').textContent = data.name;
+  $('result-desc').textContent = data.desc;
+  $('result-tags').innerHTML = data.tags.map(function(tag){
+    return '<span class="tag">' + tag + '</span>';
+  }).join('');
+  showScreen('result');
+  if(annotating) injectBadges();   /* 结果内容填充会清除 R-02/03/04/06 徽章，重注入 */
+}
+
+/* ==================== 原型走查层：标注模式 ==================== */
+var annotating = false;
+
+function injectBadges(){
+  document.querySelectorAll('.prd-badge').forEach(function(b){ b.remove(); });
+  document.querySelectorAll('[data-prd]').forEach(function(el){
+    var badge = document.createElement('span');
+    badge.className = 'prd-badge';
+    badge.textContent = el.getAttribute('data-prd');
+    badge.title = '点击查看该元素的 PRD 规则';
+    badge.addEventListener('click', function(e){
+      e.stopPropagation();
+      var key = el.getAttribute('data-prd');
+      var n = PRD_NOTES[key];
+      $('note-id').textContent = key;
+      $('note-title').textContent = n.title;
+      $('note-src').textContent = n.src;
+      $('note-rule').textContent = n.rule;
+      $('prd-note-mask').classList.remove('hidden');
+    });
+    el.appendChild(badge);
+  });
+}
+
+function setNotes(on){
+  annotating = on;
+  document.body.classList.toggle('annotating', on);
+  var btn = $('pb-notes');
+  btn.textContent = '标注模式：' + (on ? '开' : '关');
+  btn.classList.toggle('on', on);
+  document.querySelectorAll('.prd-badge').forEach(function(b){ b.remove(); });
+  if(on) injectBadges();
+}
+
+/* ==================== 原型走查层：页面直达 ==================== */
+function jumpTo(target){
+  if(target === 'welcome'){
+    showScreen('welcome');
+  }else if(target === 'quiz'){
+    current = 0;
+    answers = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+    locked = false;
+    $('proto-direct-tip').classList.add('hidden');
+    renderQuestion();
+    showScreen('quiz');
+  }else if(target === 'result'){
+    /* 直达示例：全选 A → ESTJ（原型走查用，非真实作答） */
+    current = QUESTIONS.length;
+    answers = {E:7,I:0,S:7,N:0,T:7,F:0,J:7,P:0};
+    var tip = $('proto-direct-tip');
+    tip.textContent = '原型直达示例：当前结果由"全选 A"示例数据生成（ESTJ），仅用于结果页走查；正式体验请从欢迎页完整作答。';
+    tip.classList.remove('hidden');
+    showResult();
+  }
+}
+
+/* ==================== 事件绑定 ==================== */
+$('btn-start').addEventListener('click', startQuiz);
+$('opt-a').addEventListener('click', function(){ pick('a'); });
+$('opt-b').addEventListener('click', function(){ pick('b'); });
+$('btn-retest').addEventListener('click', startQuiz);
+
+$('pb-notes').addEventListener('click', function(){ setNotes(!annotating); });
+$('pb-flow').addEventListener('click', function(){ $('flow-mask').classList.remove('hidden'); });
+$('flow-close').addEventListener('click', function(){ $('flow-mask').classList.add('hidden'); });
+$('flow-mask').addEventListener('click', function(e){ if(e.target === this) this.classList.add('hidden'); });
+$('prd-note-close').addEventListener('click', function(){ $('prd-note-mask').classList.add('hidden'); });
+$('prd-note-mask').addEventListener('click', function(e){ if(e.target === this) this.classList.add('hidden'); });
+
+document.querySelectorAll('.pb-btn[data-jump]').forEach(function(b){
+  b.addEventListener('click', function(){ jumpTo(b.getAttribute('data-jump')); });
+});
+
+</script>
+</body>
+</html>
